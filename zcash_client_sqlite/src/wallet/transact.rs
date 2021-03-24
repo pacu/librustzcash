@@ -716,4 +716,61 @@ mod tests {
         )
         .unwrap();
     }
+
+    // #[test]
+    // fn create_to_address_succeeds_to_z_addr_zero_change() {
+    //     let cache_file = NamedTempFile::new().unwrap();
+    //     let db_cache = BlockDB(Connection::open(cache_file.path()).unwrap());
+    //     init_cache_database(&db_cache).unwrap();
+
+    //     let data_file = NamedTempFile::new().unwrap();
+    //     let db_data = WalletDB::for_path(data_file.path(), tests::network()).unwrap();
+    //     init_wallet_db(&db_data).unwrap();
+
+    //     // Add an account to the wallet
+    //     let extsk = ExtendedSpendingKey::master(&[]);
+    //     let extfvk = ExtendedFullViewingKey::from(&extsk);
+    //     init_accounts_table(&db_data, &[extfvk.clone()]).unwrap();
+
+    //     // Add funds to the wallet in a single note
+    //     let value = Amount::from_u64(51000).unwrap();
+    //     let (cb, _) = fake_compact_block(
+    //         sapling_activation_height(),
+    //         BlockHash([0; 32]),
+    //         extfvk.clone(),
+    //         value,
+    //     );
+    //     insert_into_cache(&db_cache, &cb);
+    //     let mut db_write = db_data.get_update_ops().unwrap();
+    //     scan_cached_blocks(&tests::network(), &db_cache, &mut db_write, None).unwrap();
+
+    //     // Verified balance matches total balance
+    //     let (_, anchor_height) = (&db_data).get_target_and_anchor_heights().unwrap().unwrap();
+    //     assert_eq!(get_balance(&db_data, AccountId(0)).unwrap(), value);
+    //     assert_eq!(
+    //         get_balance_at(&db_data, AccountId(0), anchor_height).unwrap(),
+    //         value
+    //     );
+
+    //     // Send some of the funds to another address
+    //     let extsk2 = ExtendedSpendingKey::master(&[]);
+    //     let to = extsk2.default_address().unwrap().1.into();
+
+    //     // let tx_ref = create_spend_to_address(
+    //     //     &mut db_write,
+    //     //     &tests::network(),
+    //     //     test_prover(),
+    //     //     AccountId(0),
+    //     //     &extsk,
+    //     //     &to,
+    //     //     Amount::from_u64(50000).unwrap(),
+    //     //     None,
+    //     //     OvkPolicy::Sender,
+    //     // )
+    //     // .unwrap();
+
+    //     fake_compact_block_spending()
+
+
+    // }
 }

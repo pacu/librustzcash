@@ -65,6 +65,7 @@ mod tests {
     use zcash_primitives::{
         block::BlockHash,
         transaction::components::Amount,
+        transaction::components::amount::DEFAULT_FEE,
         zip32::{ExtendedFullViewingKey, ExtendedSpendingKey},
     };
 
@@ -538,5 +539,63 @@ mod tests {
 
         // Account balance should equal the change
         assert_eq!(get_balance(&db_data, AccountId(0)).unwrap(), value - value2);
+    }
+
+    #[test]
+    fn scan_cached_blocks_finds_no_change_spent_notes() {
+        let cache_file = NamedTempFile::new().unwrap();
+        let db_cache = BlockDB::for_path(cache_file.path()).unwrap();
+        init_cache_database(&db_cache).unwrap();
+
+        let data_file = NamedTempFile::new().unwrap();
+        let db_data = WalletDB::for_path(data_file.path(), tests::network()).unwrap();
+        init_wallet_db(&db_data).unwrap();
+
+        // Add an account to the wallet
+        let extsk = ExtendedSpendingKey::master(&[]);
+        let extfvk = ExtendedFullViewingKey::from(&extsk);
+        init_accounts_table(&db_data, &[extfvk.clone()]).unwrap();
+
+        // Account balance should be zero
+        assert_eq!(get_balance(&db_data, AccountId(0)).unwrap(), Amount::zero());
+
+        // Create a fake CompactBlock sending value to the address
+        let value = Amount::from_u64(5).unwrap();
+        let (cb, nf) = fake_compact_block(
+            sapling_activation_height(),
+            BlockHash([0; 32]),
+            extfvk.clone(),
+            value,
+        );
+        insert_into_cache(&db_cache, &cb);
+
+        // Scan the cache
+        let mut db_write = db_data.get_update_ops().unwrap();
+        scan_cached_blocks(&tests::network(), &db_cache, &mut db_write, None).unwrap();
+
+        // Account balance should reflect the received note
+        assert_eq!(get_balance(&db_data, AccountId(0)).unwrap(), value);
+
+        // Create a second fake CompactBlock spending value from the address
+        let extsk2 = ExtendedSpendingKey::master(&[0]);
+        let to2 = extsk2.default_address().unwrap().1;
+        let value2 = value;
+        insert_into_cache(
+            &db_cache,
+            &fake_compact_block_spending(
+                sapling_activation_height() + 1,
+                cb.hash(),
+                (nf, value),
+                extfvk,
+                to2,
+                value2,
+            ),
+        );
+
+        // Scan the cache again
+        scan_cached_blocks(&tests::network(), &db_cache, &mut db_write, None).unwrap();
+
+        // Account balance should equal the change
+        assert_eq!(get_balance(&db_data, AccountId(0)).unwrap(), Amount::from_u64(0).unwrap());
     }
 }
