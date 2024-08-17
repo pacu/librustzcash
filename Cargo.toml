@@ -61,7 +61,7 @@ sapling = { package = "sapling-crypto", version = "0.2", default-features = fals
 
 # - Orchard
 nonempty = "0.7"
-orchard = { version = "0.9", default-features = false }
+orchard = { git = "https://github.com/pacu/orchard.git", rev = "d0d6d2c1ab141d503725d0691e9f4318797558f6", default-features = false }
 pasta_curves = "0.5"
 
 # - Transparent
