@@ -383,16 +383,64 @@ pub(crate) fn get_transparent_balances<P: consensus::Parameters>(
 pub(crate) fn add_transparent_account_balances(
     conn: &rusqlite::Connection,
     mempool_height: BlockHeight,
+    min_confirmations: u32,
     account_balances: &mut HashMap<AccountId, AccountBalance>,
 ) -> Result<(), SqliteClientError> {
-    let mut stmt_account_balances = conn.prepare(
+    
+    let mut stmt_account_spendable_balances = conn.prepare(
         "SELECT u.account_id, SUM(u.value_zat)
          FROM transparent_received_outputs u
          JOIN transactions t
          ON t.id_tx = u.transaction_id
-         -- the transaction that created the output is mined or is definitely unexpired
+         -- the transaction that created the output is mined and with enough confirmations
          WHERE (
             t.mined_height < :mempool_height -- tx is mined
+            AND :mempool_height - t.mined_height >= :min_confirmations -- has at least min_confirmations
+         )
+         -- and the received txo is unspent
+         AND u.id NOT IN (
+           SELECT transparent_received_output_id
+           FROM transparent_received_output_spends txo_spends
+           JOIN transactions tx
+             ON tx.id_tx = txo_spends.transaction_id
+           WHERE tx.mined_height IS NOT NULL -- the spending tx is mined
+           OR tx.expiry_height = 0 -- the spending tx will not expire
+           OR tx.expiry_height >= :mempool_height -- the spending tx is unexpired
+         )
+         GROUP BY u.account_id",
+    )?;
+    let mut rows = stmt_account_spendable_balances
+        .query(named_params![
+            ":mempool_height": u32::from(mempool_height),
+            ":min_confirmations": min_confirmations,
+            ])?;
+
+    while let Some(row) = rows.next()? {
+        let account = AccountId(row.get(0)?);
+        let raw_value = row.get(1)?;
+        let value = NonNegativeAmount::from_nonnegative_i64(raw_value).map_err(|_| {
+            SqliteClientError::CorruptedData(format!("Negative UTXO value {:?}", raw_value))
+        })?;
+
+        
+        account_balances
+            .entry(account)
+            .or_insert(AccountBalance::ZERO)
+            .with_unshielded_balance_mut::<_, SqliteClientError>(|bal| {
+                bal.add_spendable_value(value)?;
+                Ok(())
+            })?;
+    }
+
+    let mut stmt_account_unconfirmed_balances = conn.prepare(
+        "SELECT u.account_id, SUM(u.value_zat)
+         FROM transparent_received_outputs u
+         JOIN transactions t
+         ON t.id_tx = u.transaction_id
+         -- the transaction that created the output is mined with not enough confirmations or is definitely unexpired
+         WHERE (
+            (t.mined_height < :mempool_height
+            AND (:mempool_height - t.mined_height) < :min_confirmations) -- tx is mined but not confirmed
             OR t.expiry_height = 0 -- tx will not expire
             OR t.expiry_height >= :mempool_height
          )
@@ -408,8 +456,12 @@ pub(crate) fn add_transparent_account_balances(
          )
          GROUP BY u.account_id",
     )?;
-    let mut rows = stmt_account_balances
-        .query(named_params![":mempool_height": u32::from(mempool_height),])?;
+
+    let mut rows = stmt_account_unconfirmed_balances
+        .query(named_params![
+            ":mempool_height": u32::from(mempool_height),
+            ":min_confirmations": min_confirmations,
+            ])?;
 
     while let Some(row) = rows.next()? {
         let account = AccountId(row.get(0)?);
@@ -418,6 +470,7 @@ pub(crate) fn add_transparent_account_balances(
             SqliteClientError::CorruptedData(format!("Negative UTXO value {:?}", raw_value))
         })?;
 
+        
         account_balances
             .entry(account)
             .or_insert(AccountBalance::ZERO)
