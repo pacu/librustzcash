@@ -13,17 +13,24 @@ and this library adheres to Rust's notion of
 - `zcash_client_backend::AccountBalance::with_unshielded_balance_mut`
 
 ### Deprecated
-- `zcash_client_backend::AccountBalance::add_unshielded_value`
-- `zcash_client_backend::AccountBalance::unshielded`
+- `zcash_client_backend::AccountBalance::unshielded`. Instead use
+  `account_balance.unshielded_balance().total()`.
+  
+### Removed
+- `zcash_client_backend::AccountBalance::add_unshielded_value`. Instead use
+  `AccountBalance::with_unshielded_balance_mut` with a closure that calls
+  the appropriate `add_*_value` method(s) of `Balance` on its argument.
+  Note that the appropriate method(s) depend on whether the funds are
+  spendable, pending change, or pending non-change (previously, only the
+  total unshielded value was tracked).
 ## [0.19.0] - 2024-10-02
 
 ### Changed
 - Migrated to `zcash_address 0.6`.
-- Implemented changes to refactor AccountBalance to use Balance for transparent funds
-(see issue #1411). `AccountBalance` now has an `unshielded` value that uses Balance.
-The current implementation maintains retrocompatibility with the `unshielded` value
-represeted with a `NonNegativeAmount`. There are values that are pending to be 
-implemented such as change tracking.
+- Refactored `AccountBalance` to use `Balance` for transparent funds (issue #1411).
+  `AccountBalance` now has an `unshielded_balance()` that uses `Balance`. This does
+  not currently distinguish between pending change and non-change; the pending value
+  is all counted as non-change.
   
 
 ### Fixed

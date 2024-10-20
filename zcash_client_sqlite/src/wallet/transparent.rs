@@ -423,10 +423,7 @@ pub(crate) fn add_transparent_account_balances(
         account_balances
             .entry(account)
             .or_insert(AccountBalance::ZERO)
-            .with_unshielded_balance_mut::<_, SqliteClientError>(|bal| {
-                bal.add_spendable_value(value)?;
-                Ok(())
-            })?;
+            .with_unshielded_balance_mut(|bal| bal.add_spendable_value(value))?;
     }
 
     let mut stmt_account_unconfirmed_balances = conn.prepare(
@@ -469,10 +466,7 @@ pub(crate) fn add_transparent_account_balances(
         account_balances
             .entry(account)
             .or_insert(AccountBalance::ZERO)
-            .with_unshielded_balance_mut::<_, SqliteClientError>(|bal| {
-                bal.add_pending_spendable_value(value)?;
-                Ok(())
-            })?;
+            .with_unshielded_balance_mut(|bal| bal.add_pending_spendable_value(value))?;
     }
     Ok(())
 }
