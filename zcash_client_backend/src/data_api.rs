@@ -287,7 +287,7 @@ impl AccountBalance {
 
     /// Returns the total value of unspent transparent transaction outputs belonging to the wallet.
     #[deprecated(
-        note = "this function is deprecated. Please use AccountBalance::unshielded_balance instead."
+        note = "this function is deprecated. Please use [`AccountBalance::unshielded_balance`] instead."
     )]
     pub fn unshielded(&self) -> NonNegativeAmount {
         self.unshielded_balance.total()
@@ -308,16 +308,6 @@ impl AccountBalance {
         let result = f(&mut self.unshielded_balance)?;
         self.check_total()?;
         Ok(result)
-    }
-
-    /// Adds the specified value to the unshielded total, checking for overflow of
-    /// the total account balance.
-    #[deprecated(
-        note = "this function is deprecated. Please use the `Balance::add_spendable_value` on the unshielded field instead instead."
-    )]
-    pub fn add_unshielded_value(&mut self, value: NonNegativeAmount) -> Result<(), BalanceError> {
-        self.unshielded_balance.add_pending_spendable_value(value)?;
-        Ok(())
     }
 
     /// Returns the total value of funds belonging to the account.
