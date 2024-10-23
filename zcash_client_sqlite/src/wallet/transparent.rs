@@ -394,7 +394,7 @@ pub(crate) fn add_transparent_account_balances(
          -- the transaction that created the output is mined and with enough confirmations
          WHERE (
             t.mined_height < :mempool_height -- tx is mined
-            AND :mempool_height - t.mined_height >= :min_confirmations -- has at least min_confirmations
+            AND t.mined_height <= (t.mined_height - :min_confirmations) -- has at least min_confirmations
          )
          -- and the received txo is unspent
          AND u.id NOT IN (
@@ -433,8 +433,8 @@ pub(crate) fn add_transparent_account_balances(
          ON t.id_tx = u.transaction_id
          -- the transaction that created the output is mined with not enough confirmations or is definitely unexpired
          WHERE (
-            (t.mined_height < :mempool_height
-            AND (:mempool_height - t.mined_height) < :min_confirmations) -- tx is mined but not confirmed
+            t.mined_height < :mempool_height
+            AND t.mined_height > (t.mined_height - :min_confirmations) -- tx is mined but not confirmed
             OR t.expiry_height = 0 -- tx will not expire
             OR t.expiry_height >= :mempool_height
          )

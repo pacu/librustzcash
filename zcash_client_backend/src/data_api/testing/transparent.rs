@@ -105,6 +105,22 @@ where
         st.wallet().get_transparent_balances(account_id, height_2),
         Ok(h) if h.get(taddr) == Some(&value)
     );
+    // TODO: Find our why this does not work.
+    
+    // let unshielded_balance = st.wallet().get_wallet_summary(0)
+    //     .unwrap()
+    //     .unwrap()
+    //     .account_balances
+    //     .get(&account_id)
+    //     .unwrap()
+    //     .unshielded_balance;
+
+    // let mut expected_balance = Balance::ZERO;
+    
+    // expected_balance.add_pending_change_value(value).unwrap();
+
+    // assert_eq!(unshielded_balance, expected_balance);
+        
 }
 
 pub fn transparent_balance_across_shielding<DSF>(dsf: DSF, cache: impl TestCache)
