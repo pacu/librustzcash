@@ -1,9 +1,6 @@
 use crate::{
     data_api::{
-        testing::{AddressType, TestBuilder, TestState},
-        testing::{DataStoreFactory, ShieldedProtocol, TestCache},
-        wallet::input_selection::GreedyInputSelector,
-        Account as _, InputSource, WalletRead, WalletWrite,
+        testing::{AddressType, DataStoreFactory, ShieldedProtocol, TestBuilder, TestCache, TestState}, wallet::input_selection::GreedyInputSelector, Account as _, Balance, InputSource, WalletRead, WalletWrite
     },
     fees::{fixed, DustOutputPolicy},
     wallet::WalletTransparentOutput,
@@ -138,7 +135,7 @@ where
     }
     st.scan_cached_blocks(start_height, 10);
 
-    let check_balance = |st: &TestState<_, DSF::DataStore, _>, min_confirmations: u32, expected| {
+    let check_balance = |st: &TestState<_, DSF::DataStore, _>, min_confirmations: u32, expected: &crate::data_api::Balance| {
         // Check the wallet summary returns the expected transparent balance.
         let summary = st
             .wallet()
@@ -148,7 +145,8 @@ where
         let balance = summary.account_balances().get(&account.id()).unwrap();
         // TODO: in the future, we will distinguish between available and total
         // balance according to `min_confirmations`
-        assert_eq!(balance.unshielded(), expected);
+        // assert_eq!(balance.unshielded(), expected);
+        assert_eq!(balance.unshielded_balance(), expected);
 
         // Check the older APIs for consistency.
         let mempool_height = st.wallet().chain_height().unwrap().unwrap() + 1;
@@ -159,7 +157,7 @@ where
                 .get(taddr)
                 .cloned()
                 .unwrap_or(NonNegativeAmount::ZERO),
-            expected,
+            expected.total(),
         );
         assert_eq!(
             st.wallet()
@@ -168,7 +166,7 @@ where
                 .into_iter()
                 .map(|utxo| utxo.value())
                 .sum::<Option<NonNegativeAmount>>(),
-            Some(expected),
+            Some(expected.spendable_value()),
         );
     };
 
@@ -177,7 +175,7 @@ where
     // and total balance, we should perform additional checks against available balance;
     // we use minconf 0 here because all transparent funds are considered shieldable,
     // irrespective of confirmation depth.
-    check_balance(&st, 0, NonNegativeAmount::ZERO);
+    check_balance(&st, 0, &Balance::ZERO);
 
     // Create a fake transparent output.
     let value = NonNegativeAmount::from_u64(100000).unwrap();
@@ -194,7 +192,12 @@ where
         .unwrap();
 
     // The wallet should detect the balance as available
-    check_balance(&st, 0, value);
+    let mut zero_conf_value = Balance::ZERO;
+
+    // add the spendable value to the expected balance
+    zero_conf_value.add_spendable_value(value).unwrap();
+
+    check_balance(&st, 0, &zero_conf_value);
 
     // Shield the output.
     let input_selector = GreedyInputSelector::new();
@@ -218,14 +221,14 @@ where
 
     // The wallet should have zero transparent balance, because the shielding
     // transaction can be mined.
-    check_balance(&st, 0, NonNegativeAmount::ZERO);
+    check_balance(&st, 0, &Balance::ZERO);
 
     // Mine the shielding transaction.
     let (mined_height, _) = st.generate_next_block_including(txid);
     st.scan_cached_blocks(mined_height, 1);
 
     // The wallet should still have zero transparent balance.
-    check_balance(&st, 0, NonNegativeAmount::ZERO);
+    check_balance(&st, 0, &Balance::ZERO);
 
     // Unmine the shielding transaction via a reorg.
     st.wallet_mut()
@@ -234,7 +237,7 @@ where
     assert_eq!(st.wallet().chain_height().unwrap(), Some(mined_height - 1));
 
     // The wallet should still have zero transparent balance.
-    check_balance(&st, 0, NonNegativeAmount::ZERO);
+    check_balance(&st, 0, &Balance::ZERO);
 
     // Expire the shielding transaction.
     let expiry_height = st
@@ -245,5 +248,5 @@ where
         .expiry_height();
     st.wallet_mut().update_chain_tip(expiry_height).unwrap();
 
-    check_balance(&st, 0, value);
+    check_balance(&st, 0, &zero_conf_value);
 }
