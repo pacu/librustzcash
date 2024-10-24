@@ -1,6 +1,10 @@
 use crate::{
     data_api::{
-        testing::{AddressType, DataStoreFactory, ShieldedProtocol, TestBuilder, TestCache, TestState}, wallet::input_selection::GreedyInputSelector, Account as _, Balance, InputSource, WalletRead, WalletWrite
+        testing::{
+            AddressType, DataStoreFactory, ShieldedProtocol, TestBuilder, TestCache, TestState,
+        },
+        wallet::input_selection::GreedyInputSelector,
+        Account as _, Balance, InputSource, WalletRead, WalletWrite,
     },
     fees::{fixed, DustOutputPolicy},
     wallet::WalletTransparentOutput,
@@ -106,7 +110,7 @@ where
         Ok(h) if h.get(taddr) == Some(&value)
     );
     // TODO: Find our why this does not work.
-    
+
     // let unshielded_balance = st.wallet().get_wallet_summary(0)
     //     .unwrap()
     //     .unwrap()
@@ -116,11 +120,10 @@ where
     //     .unshielded_balance;
 
     // let mut expected_balance = Balance::ZERO;
-    
+
     // expected_balance.add_pending_change_value(value).unwrap();
 
     // assert_eq!(unshielded_balance, expected_balance);
-        
 }
 
 pub fn transparent_balance_across_shielding<DSF>(dsf: DSF, cache: impl TestCache)
@@ -151,7 +154,9 @@ where
     }
     st.scan_cached_blocks(start_height, 10);
 
-    let check_balance = |st: &TestState<_, DSF::DataStore, _>, min_confirmations: u32, expected: &crate::data_api::Balance| {
+    let check_balance = |st: &TestState<_, DSF::DataStore, _>,
+                         min_confirmations: u32,
+                         expected: &crate::data_api::Balance| {
         // Check the wallet summary returns the expected transparent balance.
         let summary = st
             .wallet()
