@@ -23,6 +23,7 @@ and this library adheres to Rust's notion of
   Note that the appropriate method(s) depend on whether the funds are
   spendable, pending change, or pending non-change (previously, only the
   total unshielded value was tracked).
+
 ## [0.19.0] - 2024-10-02
 
 ### Changed
@@ -31,7 +32,6 @@ and this library adheres to Rust's notion of
   `AccountBalance` now has an `unshielded_balance()` that uses `Balance`. This does
   not currently distinguish between pending change and non-change; the pending value
   is all counted as non-change.
-  
 
 ### Fixed
 - The previous release did not bump `zcash_address` and ended up depending on
