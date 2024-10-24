@@ -386,6 +386,7 @@ pub(crate) fn add_transparent_account_balances(
     min_confirmations: u32,
     account_balances: &mut HashMap<AccountId, AccountBalance>,
 ) -> Result<(), SqliteClientError> {
+    // TODO (#1592): Ability to distinguish between Transparent pending change and pending non-change
     let mut stmt_account_spendable_balances = conn.prepare(
         "SELECT u.account_id, SUM(u.value_zat)
          FROM transparent_received_outputs u
@@ -394,7 +395,7 @@ pub(crate) fn add_transparent_account_balances(
          -- the transaction that created the output is mined and with enough confirmations
          WHERE (
             t.mined_height < :mempool_height -- tx is mined
-            AND t.mined_height <= (t.mined_height - :min_confirmations) -- has at least min_confirmations
+            AND (:mempool_height - t.mined_height + 1) >= :min_confirmations -- has at least min_confirmations
          )
          -- and the received txo is unspent
          AND u.id NOT IN (
@@ -434,7 +435,7 @@ pub(crate) fn add_transparent_account_balances(
          -- the transaction that created the output is mined with not enough confirmations or is definitely unexpired
          WHERE (
             t.mined_height < :mempool_height
-            AND t.mined_height > (t.mined_height - :min_confirmations) -- tx is mined but not confirmed
+            AND (:mempool_height - t.mined_height + 1) < :min_confirmations -- tx is mined but not confirmed
             OR t.expiry_height = 0 -- tx will not expire
             OR t.expiry_height >= :mempool_height
          )
