@@ -9,6 +9,12 @@ and this library adheres to Rust's notion of
 
 ### Changed
 - MSRV is now 1.77.0.
+- Refactored `AccountBalance` to use `Balance` for transparent funds (issue #1411).
+  `AccountBalance` now has an `unshielded_balance()` function that returns `Balance`. 
+  This does not currently distinguish between pending change and non-change; the 
+  pending value is all counted as non-change. Ability to distinguish such funds is 
+  tracked by issue #1592
+
 ### Added
 - `zcash_client_backend::AccountBalance::with_unshielded_balance_mut`
 
@@ -28,10 +34,6 @@ and this library adheres to Rust's notion of
 
 ### Changed
 - Migrated to `zcash_address 0.6`.
-- Refactored `AccountBalance` to use `Balance` for transparent funds (issue #1411).
-  `AccountBalance` now has an `unshielded_balance()` that uses `Balance`. This does
-  not currently distinguish between pending change and non-change; the pending value
-  is all counted as non-change.
 
 ### Fixed
 - The previous release did not bump `zcash_address` and ended up depending on
