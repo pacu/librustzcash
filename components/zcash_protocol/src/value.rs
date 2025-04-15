@@ -236,10 +236,10 @@ impl Mul<usize> for ZatBalance {
 pub struct Zatoshis(u64);
 
 
-/// Represents an intent of representing spendable value to reach a certain targeted
-/// amount. `MaxSpendable` refers to the intent of referring all the spendable
-/// value, whereas `MinValue(Zatoshis)` would refer to the an amount of `Zatoshis`
-/// that can cover at minimum the given zatoshis
+/// An intent of representing spendable value to reach a certain targeted
+/// amount. `MaxSpendable` refers to all the spendable value, whereas 
+/// `MinValue(Zatoshis)` would refer to the amount of `Zatoshis` that can cover 
+/// at minimum the given zatoshis
 #[derive(Debug, Clone, Copy)]
 pub enum TargetValue {
     MaxSpendable,
