@@ -129,6 +129,15 @@ where
     F: Fn(&P, &Row) -> Result<Option<ReceivedNote<ReceivedNoteId, Note>>, SqliteClientError>,
 {
     match target_value {
+        TargetValue::MaxSpendable =>  select_maximum_spendable_notes(
+            conn,
+            params,
+            account,
+            anchor_height,
+            exclude,
+            protocol,
+            to_spendable_note,
+        ),
         TargetValue::MinValue(zats) => select_minimum_spendable_notes(
             conn,
             params,
@@ -140,6 +149,36 @@ where
             to_spendable_note,
         ),
     }
+}
+
+#[allow(clippy::too_many_arguments)]
+fn select_maximum_spendable_notes<P: consensus::Parameters, F, Note>(
+    conn: &Connection,
+    params: &P,
+    account: AccountUuid,
+    anchor_height: BlockHeight,
+    exclude: &[ReceivedNoteId],
+    protocol: ShieldedProtocol,
+    to_spendable_note: F,
+) -> Result<Vec<ReceivedNote<ReceivedNoteId, Note>>, SqliteClientError>
+where
+    F: Fn(&P, &Row) -> Result<Option<ReceivedNote<ReceivedNoteId, Note>>, SqliteClientError>,
+{
+    let birthday_height = match wallet_birthday(conn)? {
+        Some(birthday) => birthday,
+        None => {
+            // the wallet birthday can only be unknown if there are no accounts in the wallet; in
+            // such a case, the wallet has no notes to spend.
+            return Ok(vec![]);
+        }
+    };
+
+    let (table_prefix, index_col, note_reconstruction_cols) = per_protocol_names(protocol);
+    if unscanned_tip_exists(conn, anchor_height, table_prefix)? {
+        return Ok(vec![]);
+    }
+
+    Ok(vec![]) // TODO: implement function
 }
 
 #[allow(clippy::too_many_arguments)]

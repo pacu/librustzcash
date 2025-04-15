@@ -247,7 +247,8 @@ pub struct Zatoshis(u64);
 /// value spend intent is "as much as possible" without knowing the value upfront?
 #[derive(Debug, Clone, Copy)]
 pub enum TargetValue {
-    MinValue(Zatoshis),
+    MaxSpendable,
+    MinValue(Zatoshis)
 }
 
 /// A struct that provides both the quotient and remainder of a division operation.
