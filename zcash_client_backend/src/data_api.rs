@@ -1207,7 +1207,6 @@ pub trait InputSource {
         exclude: &[Self::NoteRef],
     ) -> Result<SpendableNotes<Self::NoteRef>, Self::Error>;
 
-
     /// Returns metadata describing the structure of the wallet for the specified account.
     ///
     /// The returned metadata value must exclude:

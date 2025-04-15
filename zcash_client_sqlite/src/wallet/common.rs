@@ -129,25 +129,17 @@ where
     F: Fn(&P, &Row) -> Result<Option<ReceivedNote<ReceivedNoteId, Note>>, SqliteClientError>,
 {
     match target_value {
-        TargetValue::MaxSpendable => select_max_spendable_notes(conn, params, account, anchor_height, exclude, protocol, to_spendable_note),
-        TargetValue::MinValue(zats) => select_minimum_spendable_notes(conn, params, account, zats, anchor_height, exclude, protocol, to_spendable_note)
+        TargetValue::MinValue(zats) => select_minimum_spendable_notes(
+            conn,
+            params,
+            account,
+            zats,
+            anchor_height,
+            exclude,
+            protocol,
+            to_spendable_note,
+        ),
     }
-}
-
-#[allow(clippy::too_many_arguments)]
-fn select_max_spendable_notes<P: consensus::Parameters, F, Note>(
-    conn: &Connection,
-    params: &P,
-    account: AccountUuid,
-    anchor_height: BlockHeight,
-    exclude: &[ReceivedNoteId],
-    protocol: ShieldedProtocol,
-    to_spendable_note: F,
-) -> Result<Vec<ReceivedNote<ReceivedNoteId, Note>>, SqliteClientError>
-where
-    F: Fn(&P, &Row) -> Result<Option<ReceivedNote<ReceivedNoteId, Note>>, SqliteClientError>,
-{
-    Err(SqliteClientError::AccountUnknown)
 }
 
 #[allow(clippy::too_many_arguments)]

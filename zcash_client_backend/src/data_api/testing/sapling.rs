@@ -11,7 +11,7 @@ use zcash_primitives::transaction::{components::sapling::zip212_enforcement, Tra
 use zcash_protocol::{
     consensus::{self, BlockHeight},
     memo::MemoBytes,
-    value::{TargetValue, Zatoshis},
+    value::TargetValue,
     ShieldedProtocol,
 };
 use zip32::Scope;

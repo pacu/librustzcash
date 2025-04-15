@@ -16,7 +16,7 @@ use zcash_keys::keys::{UnifiedAddressRequest, UnifiedFullViewingKey};
 use zcash_protocol::{
     consensus::{self, BlockHeight},
     memo::MemoBytes,
-    value::{TargetValue, Zatoshis},
+    value::TargetValue,
     ShieldedProtocol, TxId,
 };
 use zip32::Scope;

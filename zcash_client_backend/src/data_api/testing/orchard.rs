@@ -17,7 +17,7 @@ use zcash_primitives::transaction::Transaction;
 use zcash_protocol::{
     consensus::{self, BlockHeight},
     memo::MemoBytes,
-    value::{TargetValue, Zatoshis},
+    value::TargetValue,
     ShieldedProtocol,
 };
 
