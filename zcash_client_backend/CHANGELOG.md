@@ -9,6 +9,17 @@ represent the transitive `semver` implications of changes within the enclosing
 workspace.
 
 ## [Unreleased]
+- `zcash_client_backend::proposal::ProposalError`:
+  - `SendsMemoToTransparentRecipient`: signals an attempt to send a memo to a transparent recipient
+  - `ResultingPaymentInvalid(Zip321Error)`: details the ZIP-321 error that the proposal 
+  resulting causes.
+- `zcash_client_backend::data_api::wallet`:
+  - `SpendableNotes::total`: returns the sum of all spendable notes in `Zatoshis`
+  - `propose_send_max_transfer`: calls `propose_send_max` for a given `InputSelector`
+  - `::input_selection::propose_send_max`: Performs input selection and returns 
+    a proposal for the construction of a transaction that sends the maximum 
+    amount possible from a given account to the specified recipient ignoring
+    notes that are below MARGINAL_FEE amount.
 
 ## [0.19.0] - 2025-05-30
 
