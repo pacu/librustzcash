@@ -234,17 +234,18 @@ pub trait SendMaxSelector {
         target_height: BlockHeight,
         min_confirmations: u32,
     ) -> Result<
-        Proposal<<ChangeT as ChangeStrategy>::FeeRule, Infallible>,
+        Proposal<<ChangeT as ChangeStrategy>::FeeRule, <Self::InputSource as InputSource>::NoteRef>,
         InputSelectorError<
             <Self::InputSource as InputSource>::Error,
             Self::Error,
             ChangeT::Error,
-            Infallible,
+            <Self::InputSource as InputSource>::NoteRef,
         >,
     >
     where
         ParamsT: consensus::Parameters,
         ChangeT: ChangeStrategy<MetaSource = Self::InputSource>;
+
 }
 
 /// A strategy for selecting transaction inputs and proposing transaction outputs
@@ -928,34 +929,32 @@ impl<DbT: InputSource> SendMaxSelector for GreedyInputSelector<DbT> {
         target_height: BlockHeight,
         min_confirmations: u32,
     ) -> Result<
-        Proposal<<ChangeT as ChangeStrategy>::FeeRule, Infallible>,
-        InputSelectorError<
-            <Self::InputSource as InputSource>::Error,
-            Self::Error,
-            ChangeT::Error,
-            Infallible,
-        >,
-    >
+        Proposal<<ChangeT as ChangeStrategy>::FeeRule, DbT::NoteRef>,
+        InputSelectorError<<DbT as InputSource>::Error, Self::Error, ChangeT::Error, DbT::NoteRef>,
+        >
     where
         ParamsT: consensus::Parameters,
-        ChangeT: ChangeStrategy<MetaSource = Self::InputSource> {
+        Self::InputSource: InputSource,
+        ChangeT: ChangeStrategy<MetaSource = DbT>,
+    {
 
 
-        let spendable_notes = wallet_db.select_spendable_notes(source_account, MARGINAL_FEE, &vec![spend_pool], anchor_height, &vec![])
+        let spendable_notes = wallet_db.select_spendable_notes(
+            source_account, 
+            TargetValue::MaxSpendable, 
+            &vec![spend_pool], 
+            anchor_height, 
+            &vec![]
+        )
             .map_err(InputSelectorError::DataSource)?;
        
-        
+        #[cfg(not(feature = "orchard"))]
+        let use_sapling = true;
+        #[cfg(feature = "orchard")]
+        let (use_sapling, use_orchard) = (!spendable_notes.sapling.is_empty(), !spendable_notes.orchard.is_empty());
 
-            #[cfg(feature = "orchard")]
-            let orchard_inputs = if use_orchard {
-                shielded_inputs
-                    .orchard()
-                    .iter()
-                    .map(|i| (*i.internal_note_id(), i.note().value()))
-                    .collect()
-            } else {
-                vec![]
-            };
+
+
         let wallet_meta = change_strategy
             .fetch_wallet_meta(wallet_db, source_account, &[])
             .map_err(InputSelectorError::DataSource)?;
@@ -963,7 +962,7 @@ impl<DbT: InputSource> SendMaxSelector for GreedyInputSelector<DbT> {
         let balance = match spend_pool {
             ShieldedProtocol::Sapling => {
                 let sapling_value = spendable_notes.sapling_value()
-                    .map_err(ProposalError::PaymentPoolsMismatch)?;
+                    .map_err(|_| InputSelectorError::Proposal(ProposalError::PaymentPoolsMismatch))?;
                 let sapling_inputs = spendable_notes
                     .sapling()
                     .iter()
@@ -998,12 +997,19 @@ impl<DbT: InputSource> SendMaxSelector for GreedyInputSelector<DbT> {
         }
         .map_err(|other| InputSelectorError::Change(other))?;
         
-
+        let shielded_inputs =
+                        NonEmpty::from_vec(spendable_notes.into_vec(&SimpleNoteRetention {
+                            sapling: use_sapling,
+                            #[cfg(feature = "orchard")]
+                            orchard: use_orchard,
+                        }))
+                        .map(|notes| ShieldedInputs::from_parts(anchor_height, notes));
+        
         Proposal::single_step(
             TransactionRequest::empty(),
                 BTreeMap::new(),
             vec![], 
-            spendable_notes,
+            shielded_inputs,
             balance, 
   (*change_strategy.fee_rule()).clone(), 
             target_height,

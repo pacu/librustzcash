@@ -248,7 +248,7 @@ pub struct Zatoshis(u64);
 #[derive(Debug, Clone, Copy)]
 pub enum TargetValue {
     MaxSpendable,
-    MinValue(Zatoshis)
+    MinValue(Zatoshis),
 }
 
 /// A struct that provides both the quotient and remainder of a division operation.

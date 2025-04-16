@@ -129,7 +129,7 @@ where
     F: Fn(&P, &Row) -> Result<Option<ReceivedNote<ReceivedNoteId, Note>>, SqliteClientError>,
 {
     match target_value {
-        TargetValue::MaxSpendable =>  select_maximum_spendable_notes(
+        TargetValue::MaxSpendable => select_maximum_spendable_notes(
             conn,
             params,
             account,
