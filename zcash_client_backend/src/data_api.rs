@@ -748,6 +748,27 @@ pub struct SpendableNotes<NoteRef> {
     orchard: Vec<ReceivedNote<NoteRef, orchard::note::Note>>,
 }
 
+impl<R> SpendableNotes<R> {
+    pub fn total(&self) -> Result<Zatoshis, BalanceError> {
+        let total = self.sapling.iter().try_fold(Zatoshis::ZERO, |acc, n| {
+            (acc + Zatoshis::try_from(n.note().value().inner())
+                .map_err(|_| BalanceError::Overflow)?)
+            .ok_or(BalanceError::Overflow)
+        })?;
+
+        #[cfg(feature = "orchard")]
+        let total = (total
+            + self.orchard.iter().try_fold(Zatoshis::ZERO, |acc, n| {
+                (acc + Zatoshis::try_from(n.note().value().inner())
+                    .map_err(|_| BalanceError::Overflow)?)
+                .ok_or(BalanceError::Overflow)
+            })?)
+        .ok_or(BalanceError::Overflow)?;
+
+        Ok(total)
+    }
+}
+
 /// A type describing the mined-ness of transactions that should be returned in response to a
 /// [`TransactionDataRequest`].
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
