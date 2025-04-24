@@ -18,7 +18,7 @@ use zcash_primitives::transaction::fees::{
 };
 use zcash_protocol::{
     consensus::{self, BlockHeight},
-    memo::{Memo, MemoBytes},
+    memo::MemoBytes,
     value::{BalanceError, TargetValue, Zatoshis},
     PoolType, ShieldedProtocol,
 };
@@ -203,17 +203,6 @@ pub trait InputSelector {
     where
         ParamsT: consensus::Parameters,
         ChangeT: ChangeStrategy<MetaSource = Self::InputSource>;
-}
-
-pub trait SendMaxSelector {
-    /// The type of errors that may be generated in input selection
-    type Error;
-    /// The type of data source that the input selector expects to access to obtain input
-    /// from the source pool. This associated type permits input selectors that may use specialized
-    /// knowledge of the internals of a particular backing data store, if the generic API of
-    /// [`InputSource`] does not provide sufficiently fine-grained operations for a
-    /// particular backing store to optimally perform input selection.
-    type InputSource: InputSource;
 
     /// Performs input selection and returns a proposal for the construction of a transaction
     /// that sends the maximum amount possible from a given account to the specified recipient
@@ -821,104 +810,6 @@ impl<DbT: InputSource> InputSelector for GreedyInputSelector<DbT> {
             }
         }
     }
-}
-
-#[cfg(feature = "transparent-inputs")]
-impl<DbT: InputSource> ShieldingSelector for GreedyInputSelector<DbT> {
-    type Error = GreedyInputSelectorError;
-    type InputSource = DbT;
-
-    #[allow(clippy::type_complexity)]
-    fn propose_shielding<ParamsT, ChangeT>(
-        &self,
-        params: &ParamsT,
-        wallet_db: &Self::InputSource,
-        change_strategy: &ChangeT,
-        shielding_threshold: Zatoshis,
-        source_addrs: &[TransparentAddress],
-        to_account: <Self::InputSource as InputSource>::AccountId,
-        target_height: BlockHeight,
-        min_confirmations: u32,
-    ) -> Result<
-        Proposal<<ChangeT as ChangeStrategy>::FeeRule, Infallible>,
-        InputSelectorError<<DbT as InputSource>::Error, Self::Error, ChangeT::Error, Infallible>,
-    >
-    where
-        ParamsT: consensus::Parameters,
-        ChangeT: ChangeStrategy<MetaSource = Self::InputSource>,
-    {
-        let mut transparent_inputs: Vec<WalletTransparentOutput> = source_addrs
-            .iter()
-            .map(|taddr| {
-                wallet_db.get_spendable_transparent_outputs(taddr, target_height, min_confirmations)
-            })
-            .collect::<Result<Vec<Vec<_>>, _>>()
-            .map_err(InputSelectorError::DataSource)?
-            .into_iter()
-            .flat_map(|v| v.into_iter())
-            .collect();
-
-        let wallet_meta = change_strategy
-            .fetch_wallet_meta(wallet_db, to_account, &[])
-            .map_err(InputSelectorError::DataSource)?;
-
-        let trial_balance = change_strategy.compute_balance(
-            params,
-            target_height,
-            &transparent_inputs,
-            &[] as &[TxOut],
-            &sapling::EmptyBundleView,
-            #[cfg(feature = "orchard")]
-            &orchard_fees::EmptyBundleView,
-            None,
-            &wallet_meta,
-        );
-
-        let balance = match trial_balance {
-            Ok(balance) => balance,
-            Err(ChangeError::DustInputs { transparent, .. }) => {
-                let exclusions: BTreeSet<OutPoint> = transparent.into_iter().collect();
-                transparent_inputs.retain(|i| !exclusions.contains(i.outpoint()));
-
-                change_strategy.compute_balance(
-                    params,
-                    target_height,
-                    &transparent_inputs,
-                    &[] as &[TxOut],
-                    &sapling::EmptyBundleView,
-                    #[cfg(feature = "orchard")]
-                    &orchard_fees::EmptyBundleView,
-                    None,
-                    &wallet_meta,
-                )?
-            }
-            Err(other) => return Err(InputSelectorError::Change(other)),
-        };
-
-        if balance.total() >= shielding_threshold {
-            Proposal::single_step(
-                TransactionRequest::empty(),
-                BTreeMap::new(),
-                transparent_inputs,
-                None,
-                balance,
-                (*change_strategy.fee_rule()).clone(),
-                target_height,
-                true,
-            )
-            .map_err(InputSelectorError::Proposal)
-        } else {
-            Err(InputSelectorError::InsufficientFunds {
-                available: balance.total(),
-                required: shielding_threshold,
-            })
-        }
-    }
-}
-
-impl<DbT: InputSource> SendMaxSelector for GreedyInputSelector<DbT> {
-    type Error = GreedyInputSelectorError;
-    type InputSource = DbT;
 
     fn propose_send_max<ParamsT, ChangeT>(
         &self,
@@ -1057,5 +948,98 @@ impl<DbT: InputSource> SendMaxSelector for GreedyInputSelector<DbT> {
             transaction_request,
             change_strategy,
         )
+    }
+}
+
+#[cfg(feature = "transparent-inputs")]
+impl<DbT: InputSource> ShieldingSelector for GreedyInputSelector<DbT> {
+    type Error = GreedyInputSelectorError;
+    type InputSource = DbT;
+
+    #[allow(clippy::type_complexity)]
+    fn propose_shielding<ParamsT, ChangeT>(
+        &self,
+        params: &ParamsT,
+        wallet_db: &Self::InputSource,
+        change_strategy: &ChangeT,
+        shielding_threshold: Zatoshis,
+        source_addrs: &[TransparentAddress],
+        to_account: <Self::InputSource as InputSource>::AccountId,
+        target_height: BlockHeight,
+        min_confirmations: u32,
+    ) -> Result<
+        Proposal<<ChangeT as ChangeStrategy>::FeeRule, Infallible>,
+        InputSelectorError<<DbT as InputSource>::Error, Self::Error, ChangeT::Error, Infallible>,
+    >
+    where
+        ParamsT: consensus::Parameters,
+        ChangeT: ChangeStrategy<MetaSource = Self::InputSource>,
+    {
+        let mut transparent_inputs: Vec<WalletTransparentOutput> = source_addrs
+            .iter()
+            .map(|taddr| {
+                wallet_db.get_spendable_transparent_outputs(taddr, target_height, min_confirmations)
+            })
+            .collect::<Result<Vec<Vec<_>>, _>>()
+            .map_err(InputSelectorError::DataSource)?
+            .into_iter()
+            .flat_map(|v| v.into_iter())
+            .collect();
+
+        let wallet_meta = change_strategy
+            .fetch_wallet_meta(wallet_db, to_account, &[])
+            .map_err(InputSelectorError::DataSource)?;
+
+        let trial_balance = change_strategy.compute_balance(
+            params,
+            target_height,
+            &transparent_inputs,
+            &[] as &[TxOut],
+            &sapling::EmptyBundleView,
+            #[cfg(feature = "orchard")]
+            &orchard_fees::EmptyBundleView,
+            None,
+            &wallet_meta,
+        );
+
+        let balance = match trial_balance {
+            Ok(balance) => balance,
+            Err(ChangeError::DustInputs { transparent, .. }) => {
+                let exclusions: BTreeSet<OutPoint> = transparent.into_iter().collect();
+                transparent_inputs.retain(|i| !exclusions.contains(i.outpoint()));
+
+                change_strategy.compute_balance(
+                    params,
+                    target_height,
+                    &transparent_inputs,
+                    &[] as &[TxOut],
+                    &sapling::EmptyBundleView,
+                    #[cfg(feature = "orchard")]
+                    &orchard_fees::EmptyBundleView,
+                    None,
+                    &wallet_meta,
+                )?
+            }
+            Err(other) => return Err(InputSelectorError::Change(other)),
+        };
+
+        if balance.total() >= shielding_threshold {
+            Proposal::single_step(
+                TransactionRequest::empty(),
+                BTreeMap::new(),
+                transparent_inputs,
+                None,
+                balance,
+                (*change_strategy.fee_rule()).clone(),
+                target_height,
+                true,
+            )
+            .map_err(InputSelectorError::Proposal)
+        } else {
+            Err(InputSelectorError::InsufficientFunds {
+                available: balance.total(),
+                required: shielding_threshold,
+            })
+        }
     }
 }
