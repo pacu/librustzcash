@@ -885,7 +885,7 @@ pub fn send_multi_step_proposed_transfer<T: ShieldedPoolTester, DSF>(
 
 /// Test attempts to sweep a wallet into a TEX address + tests ta that ephemeral
 /// addresses are generated properly according to a given gap limit
-/// 
+///
 /// 1. funds wallet with 100000 Zatoshis
 /// 2. sets that spend amount will be 75000 Zatoshi
 /// 3. proposes a transaction to a TEX address spending 75000 Zatoshi
@@ -895,7 +895,7 @@ pub fn send_multi_step_proposed_transfer<T: ShieldedPoolTester, DSF>(
 /// 7. funds the wallet with 100000 Zatoshis
 /// 8. goes through steps 3 to 6
 /// 9. checks that the gap limit hodls and that ephemeral addresses are not reused.
-/// 
+///
 /// desired effects:
 /// - all funds are spent
 /// - Fees are the least possible: in this case 10000 Zats per transaction
