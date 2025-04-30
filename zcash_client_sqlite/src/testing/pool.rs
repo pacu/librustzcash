@@ -57,6 +57,13 @@ pub(crate) fn send_multi_step_proposed_transfer<T: ShieldedPoolTester>() {
     )
 }
 
+pub(crate) fn spend_all_funds_single_step_proposed_transfer<T: ShieldedPoolTester>() {
+    zcash_client_backend::data_api::testing::pool::spend_all_funds_single_step_proposed_transfer::<T>(
+        TestDbFactory::default(),
+        BlockCache::new(),
+    )
+}
+
 #[cfg(feature = "transparent-inputs")]
 pub(crate) fn spend_all_funds_multi_step_proposed_transfer<T: ShieldedPoolTester>() {
     zcash_client_backend::data_api::testing::pool::spend_all_funds_multi_step_proposed_transfer::<
