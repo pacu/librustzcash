@@ -493,6 +493,12 @@ pub(crate) mod tests {
 
     #[test]
     #[cfg(feature = "transparent-inputs")]
+    fn spend_all_funds_multi_step_proposed_transfer() {
+        testing::pool::spend_all_funds_multi_step_proposed_transfer::<OrchardPoolTester>()
+    }
+
+    #[test]
+    #[cfg(feature = "transparent-inputs")]
     fn proposal_fails_if_not_all_ephemeral_outputs_consumed() {
         testing::pool::proposal_fails_if_not_all_ephemeral_outputs_consumed::<OrchardPoolTester>()
     }
