@@ -1061,8 +1061,7 @@ pub fn spend_all_funds_single_step_proposed_transfer<T: ShieldedPoolTester>(
 ///
 /// desired effects:
 /// - all funds are spent
-/// - Fees are the least possible: in this case 15000 for tr0 and 10000 Zats for
-/// tr1
+/// - Fees are the least possible: in this case 15000 for tr0 and 10000 Zats for tr1
 /// - ephemeral addresses are generated for each transaction to a TEX recipient
 #[cfg(feature = "transparent-inputs")]
 pub fn spend_all_funds_multi_step_proposed_transfer<T: ShieldedPoolTester, DSF>(
