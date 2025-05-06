@@ -9,18 +9,34 @@ represent the transitive `semver` implications of changes within the enclosing
 workspace.
 
 ## [Unreleased]
-- `zcash_client_backend::proposal::ProposalError`:
-  - `SendsMemoToTransparentRecipient`: signals an attempt to send a memo to a transparent recipient
-  - `ResultingPaymentInvalid(Zip321Error)`: details the ZIP-321 error that the proposal 
-  resulting causes.
+### Added
+- `zcash_client_backend::fees`:
+  - `sapling::OutputView`: trait implemented of `Zatoshis`
+  - `orchard::OutputView`: trait implemented of `Zatoshis`
 - `zcash_client_backend::data_api::wallet`:
   - `SpendableNotes::total`: returns the sum of all spendable notes in `Zatoshis`
-  - `propose_send_max_transfer`: calls `propose_send_max` for a given `InputSelector`
-  - `::input_selection::propose_send_max`: Performs input selection and returns 
+  - `propose_send_max_transfer`: Selects transaction inputs, computes fees, and 
+  constructs a proposal for a transaction (or series of them) that would spend all
+  the available funds from the given spend pools.
+  - `input_selection::propose_send_max`: Performs input selection and returns 
     a proposal for the construction of a transaction that sends the maximum 
     amount possible from a given account to the specified recipient ignoring
     notes that are below MARGINAL_FEE amount.
 
+### Changed
+- `zcash_client_backend::data_api`:
+  - `select_spendable_notes`: parameter `target_value` now is a `TargetValue`. 
+    Existing calls to this function that used `Zatoshis` now use 
+    `TargetValue::AtLeast(Zatoshis)`
+  - `select_spendable_notes`: parameter `target_value` now is a `TargetValue`. 
+    Existing calls to this function that used `Zatoshis` now use `TargetValue::MinValue(Zatoshis)`
+  - `zcash_client_backend::fees::ChangeStrategy`: Associated error type of this trait 
+    has to be of `FeeRule` kind as well. 
+  - `zcash_client_backend::proposal::ProposalError`:
+    - `SendsMemoToTransparentRecipient`: signals an attempt to send a memo to a 
+      transparent recipient
+    - `ResultingPaymentInvalid(Zip321Error)`: details the ZIP-321 error that the
+      proposal resulting causes.
 ## [0.19.0] - 2025-05-30
 
 ### Added
@@ -52,6 +68,7 @@ workspace.
   - `select_spendable_notes`: parameter `target_value` now is a `TargetValue`.
     Existing calls to this function that used `Zatoshis` now use
     `TargetValue::AtLeast(Zatoshis)`
+- Migrated to `arti-client 0.28`, `dynosaur 0.2`, `tonic 0.13`.
 - `zcash_client_backend::tor`:
   - `Client::{connect_to_lightwalletd, get_latest_zec_to_usd_rate}` now ensure
     that the inner Tor client is ready for traffic, and re-bootstrap it if
