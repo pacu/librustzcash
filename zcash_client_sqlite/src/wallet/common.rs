@@ -267,7 +267,6 @@ where
         )
     )?;
 
-
     let excluded: Vec<Value> = exclude
         .iter()
         .filter_map(|ReceivedNoteId(p, n)| {
@@ -278,7 +277,7 @@ where
             }
         })
         .collect();
-    
+
     let excluded_ptr = Rc::new(excluded);
 
     let ineligible_notes = stmt_ineligible_notes.query_and_then(
@@ -296,7 +295,7 @@ where
         .collect::<Result<Vec<ReceivedNote<ReceivedNoteId, Note>>, SqliteClientError>>()?;
 
     if !unspendable_notes.is_empty() {
-        return Err(SqliteClientError::IneligibleNotes)
+        return Err(SqliteClientError::IneligibleNotes);
     }
     // The goal of this SQL statement is to select all the spendable notes above the
     // MARGINAL_FEE (5000 zats).
@@ -350,7 +349,6 @@ where
              FROM eligible",
         )
     )?;
-
 
     let notes = stmt_select_notes.query_and_then(
         named_params![
