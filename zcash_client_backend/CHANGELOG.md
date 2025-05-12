@@ -22,6 +22,13 @@ workspace.
     a proposal for the construction of a transaction that sends the maximum 
     amount possible from a given account to the specified recipient ignoring
     notes that are below MARGINAL_FEE amount.
+  - `zcash_client_sqlite::error::SqliteClientError`:
+    - `IneligibleNotes`: used `spendable_notes` is called with `TargetValue::MaxSpensable` 
+      and there are funds that haven't been confirmed and all spendable notes can't
+      be selected.
+- `zcash_client_backend::tor`:
+  - `Client::set_dormant`
+  - `DormantMode`
 
 ### Changed
 - `zcash_client_backend::data_api`:
