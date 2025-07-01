@@ -878,17 +878,7 @@ impl<DbT: InputSource> InputSelector for GreedyInputSelector<DbT> {
                 orchard_output_count,
             ),
             Address::Unified(addr) => {
-                if cfg!(feature = "orchard") && addr.has_orchard() {
-                    change_strategy.fee_rule().fee_required(
-                        params,
-                        target_height,
-                        [],
-                        [],
-                        spendable_notes.sapling().len(),
-                        sapling_output_count,
-                        orchard_output_count,
-                    )
-                } else if addr.has_sapling() {
+                if  addr.has_orchard() || addr.has_sapling(){
                     change_strategy.fee_rule().fee_required(
                         params,
                         target_height,

@@ -28,7 +28,7 @@ use zcash_protocol::{
     ShieldedProtocol,
 };
 use zip32::Scope;
-use zip321::{Payment, TransactionRequest, Zip321Error};
+use zip321::{Payment, TransactionRequest};
 
 use crate::{
     data_api::{
@@ -79,6 +79,7 @@ use {
     },
     zcash_proofs::prover::LocalTxProver,
     zcash_protocol::value::ZatBalance,
+    zip321::Zip321Error,
 };
 
 #[cfg(feature = "orchard")]
@@ -516,6 +517,7 @@ pub fn send_max_single_step_proposed_transfer<T: ShieldedPoolTester>(
 /// - Checks that the wallet balances are correct.
 /// - Tries to propose a send max transaction to a T-address with a memo
 /// - Fails gracefully with Zip321Error.
+#[cfg(feature = "transparent-inputs")]
 pub fn fails_to_send_max_to_transparent_with_memo<T: ShieldedPoolTester>(
     dsf: impl DataStoreFactory,
     cache: impl TestCache,
@@ -590,7 +592,6 @@ pub fn fails_to_send_max_to_transparent_with_memo<T: ShieldedPoolTester>(
 ///   same pool.
 /// - catches failure
 /// - verifies the failure is the one expected
-#[cfg(feature = "transparent-inputs")]
 pub fn send_max_proposal_fails_when_unconfirmed_funds_present<T: ShieldedPoolTester>(
     dsf: impl DataStoreFactory,
     cache: impl TestCache,

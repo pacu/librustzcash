@@ -217,7 +217,13 @@ where
     // wallet to have different spendability based upon the state of the note
     // commitment tree
     // see: https://github.com/zcash/librustzcash/issues/1796
-    let (table_prefix, index_col, note_reconstruction_cols) = per_protocol_names(protocol);
+    let TableConstants { 
+        table_prefix,
+        note_reconstruction_cols,
+        output_index_col,
+        ..
+    } = table_constants::<SqliteClientError>(protocol)?;
+    
     if unscanned_tip_exists(conn, anchor_height, table_prefix)? {
         return Ok(vec![]);
     }
@@ -226,7 +232,7 @@ where
         &format!(
             "WITH ineligible AS (
                  SELECT
-                     {table_prefix}_received_notes.id AS id, txid, {index_col},
+                     {table_prefix}_received_notes.id AS id, txid, {output_index_col},
                      diversifier, value, {note_reconstruction_cols}, commitment_tree_position,
                      accounts.ufvk as ufvk, recipient_key_scope
                  FROM {table_prefix}_received_notes
@@ -307,7 +313,7 @@ where
         &format!(
             "WITH eligible AS (
                  SELECT
-                     {table_prefix}_received_notes.id AS id, txid, {index_col},
+                     {table_prefix}_received_notes.id AS id, txid, {output_index_col},
                      diversifier, value, {note_reconstruction_cols}, commitment_tree_position,
                      accounts.ufvk as ufvk, recipient_key_scope
                  FROM {table_prefix}_received_notes
@@ -343,7 +349,7 @@ where
                     AND unscanned.block_range_end > :wallet_birthday
                  )
              )
-             SELECT id, txid, {index_col},
+             SELECT id, txid, {output_index_col},
                     diversifier, value, {note_reconstruction_cols}, commitment_tree_position,
                     ufvk, recipient_key_scope
              FROM eligible",
