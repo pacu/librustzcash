@@ -217,13 +217,13 @@ where
     // wallet to have different spendability based upon the state of the note
     // commitment tree
     // see: https://github.com/zcash/librustzcash/issues/1796
-    let TableConstants { 
+    let TableConstants {
         table_prefix,
         note_reconstruction_cols,
         output_index_col,
         ..
     } = table_constants::<SqliteClientError>(protocol)?;
-    
+
     if unscanned_tip_exists(conn, anchor_height, table_prefix)? {
         return Ok(vec![]);
     }
