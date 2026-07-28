@@ -2817,7 +2817,7 @@ impl<'a, C: Borrow<rusqlite::Transaction<'a>>, P: consensus::Parameters, CL: Clo
         tx_ref: Self::TxRef,
         d_tx: &DecryptedTransaction<Transaction, Self::AccountId>,
     ) -> Result<(), Self::Error> {
-        wallet::queue_transparent_input_retrieval(self.conn.borrow(), tx_ref, d_tx)
+        wallet::queue_transparent_input_retrieval(self.conn.borrow(), &self.params, tx_ref, d_tx)
     }
 
     fn queue_tx_retrieval(
@@ -2825,7 +2825,7 @@ impl<'a, C: Borrow<rusqlite::Transaction<'a>>, P: consensus::Parameters, CL: Clo
         txids: impl Iterator<Item = TxId>,
         dependent_tx_ref: Option<Self::TxRef>,
     ) -> Result<(), Self::Error> {
-        wallet::queue_tx_retrieval(self.conn.borrow(), txids, dependent_tx_ref)
+        wallet::queue_tx_retrieval(self.conn.borrow(), &self.params, txids, dependent_tx_ref)
     }
 
     fn delete_retrieval_queue_entries(&mut self, txid: TxId) -> Result<(), Self::Error> {

@@ -10,6 +10,31 @@ workspace.
 
 ## [Unreleased]
 
+### Fixed
+- `GetStatus` transaction data requests are no longer produced for transactions
+  having shielded components. Previously, every wallet transaction whose mined
+  height was unknown — including the wallet's own shielded sends — was polled
+  for status by txid (a behavior introduced in commit `406875adc`, first shipped
+  in `zcash_client_sqlite 0.18.5`), and a transaction detected via scanning for
+  which raw data was already present was queued for a status check by txid.
+  Each such txid-scoped query was redundant and out of scope: status requests
+  exist for transactions that compact-block scanning cannot detect.
+  The mined status of a transaction with any shielded
+  component (Sapling, Orchard, or Ironwood) is now learned exclusively via
+  chain scanning; `GetStatus` requests are produced only for fully-transparent
+  transactions, which are invisible to compact-block scanning and have no other
+  status oracle. As part of this change:
+  - `WalletWrite::set_transaction_status` now retains the status-check queue
+    entry for a fully-transparent transaction when the answer is not terminal
+    (i.e. the transaction is not yet mined and has not been confirmed unmined
+    at or beyond its expiry height), so that an as-yet-unmined transparent
+    transaction continues to be polled instead of silently being dropped after
+    a single not-yet-mined answer.
+  - Transactions containing only an Ironwood shielded bundle are now correctly
+    classified as detectable via scanning, and so are no longer queued for
+    txid-based retrieval when stored unmined.
+  - A new migration removes previously-queued status-check entries for
+    transactions with shielded components from existing wallet databases.
 ## [0.22.0-rc.4] - 2026-07-26
 
 ### Changed
