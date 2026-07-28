@@ -6288,6 +6288,7 @@ mod tests {
     ///   DEFAULT_TX_EXPIRY_DELTA`.
     #[test]
     fn status_request_retention_terminal_conditions() {
+        use rusqlite::named_params;
         use zcash_client_backend::data_api::{TransactionDataRequest, TransactionStatus};
         use zcash_primitives::transaction::builder::DEFAULT_TX_EXPIRY_DELTA;
         use zcash_protocol::TxId;
