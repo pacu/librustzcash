@@ -5311,7 +5311,13 @@ pub fn shielded_send_generates_no_status_requests<T: ShieldedPoolTester, Dsf: Da
         )
         .unwrap();
 
-    let sent_tx_id = st.create_proposed_expecting(&proposal, 1)[0];
+    let create_proposed_result = st.create_proposed_transactions::<Infallible, _, Infallible, _>(
+        account.usk(),
+        OvkPolicy::Sender,
+        &proposal,
+    );
+    assert_matches!(&create_proposed_result, Ok(txids) if txids.len() == 1);
+    let sent_tx_id = create_proposed_result.unwrap()[0];
 
     let assert_no_requests_for = |st: &TestState<_, Dsf::DataStore, _>, txid| {
         let requests = st.wallet().transaction_data_requests().unwrap();
